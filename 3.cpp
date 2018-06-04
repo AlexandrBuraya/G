@@ -85,6 +85,30 @@ public:
     }
 };
  
+void QuickSorting(vector<tuple<int, int, int>> &mas, int first, int last)
+{
+    int middle;
+    tuple<int, int, int> count;
+    int f = first, l = last;
+    middle = get<2>(mas[(f + l) / 2]);
+    do
+    {
+        while (get<2>(mas[f])<middle) f++;
+        while (get<2>(mas[l])>middle) l--;
+        if (f <= l)
+        {
+            count = mas[f];
+            mas[f] = mas[l];
+            mas[l] = count;
+            f++;
+            l--;
+        }
+    } while (f < l);
+    if (first < l) QuickSorting(mas, first, l);
+    if (f < last) QuickSorting(mas, f, last);
+}
+ 
+ 
 class AdjMatrixGraph :public RepresType {
 private:
     vector<vector<int>> adj_matrix;
@@ -368,6 +392,36 @@ public:
         return tuple<bool, bool, int>(is_weighted, is_oriented, vertex_num);
     }
  
+    vector<tuple<int, int, int>> getSpaingTreePrima() {
+        vector<tuple<int, int, int>> spaingTree;
+        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> prior_queue;
+        vector<int> distances(vertex_num, INT32_MAX);
+        vector<int> parent(vertex_num, -1);
+        vector<bool> is_marked(vertex_num, false);
+ 
+        prior_queue.push(make_pair(0, 1));
+        distances[0] = 0;
+ 
+        while (!prior_queue.empty()) {
+            int u = prior_queue.top().second - 1;
+            prior_queue.pop();
+            is_marked[u] = true;
+            for (auto it = adj_list[u].begin(); it != adj_list[u].end(); ++it) {
+                int v = it->first - 1;
+                int weight = it->second;
+                if (is_marked[v] == false && distances[v] > weight) {
+                    distances[v] = weight;
+                    prior_queue.push(make_pair(distances[v], v + 1));
+                    parent[v] = u;
+                }
+            }
+        }
+ 
+        for (int i = 1; i < parent.size(); ++i)
+            spaingTree.push_back(tuple<int, int, int>(parent[i] + 1, i + 1, distances[i]));
+        return spaingTree;
+    }
+ 
     bool checkConnectivity() {
         DSU dsu;
         for (int i = 0; i < vertex_num; ++i)
@@ -395,7 +449,7 @@ public:
  
     int checkEuler(bool circleExist) {
         int firstVertex = 1;
-        if (!circleExist&&checkConnectivity()) {
+        if (circleExist||checkConnectivity()) {
             int odd_vertexes_num = 0;
             for (int i = 0; i < vertex_num; i++) {
                 if ((adj_list[i].size() % 2) != 0) {
@@ -406,6 +460,7 @@ public:
             if (odd_vertexes_num > 2)
                 return 0;
         }
+        else return 0;
         return firstVertex;
     }
  
@@ -645,6 +700,65 @@ public:
     tuple<bool, bool, int> GetInfo() override {
         return tuple<bool, bool, int>(is_weighted, is_oriented, vertex_num);
     }
+ 
+    vector <tuple<int, int, int>> getSpaingTreeKruscal() {
+        vector <tuple<int, int, int>> spaing_tree;
+        QuickSorting(list_of_edges, 0, list_of_edges.size() - 1);
+ 
+        DSU dsu;
+        for (int i = 0; i < vertex_num; i++)
+            dsu.make_set(i + 1);
+        for (int queue = 0; queue < num_of_edges; queue++) {
+            tuple<int, int, int> edge = list_of_edges[queue];
+            if (dsu.find_set(get<0>(edge)) != dsu.find_set(get<1>(edge))) {
+                dsu.union_sets(dsu.find_set(get<0>(edge)), dsu.find_set(get<1>(edge)));
+                spaing_tree.push_back(edge);
+            }
+        }
+        return spaing_tree;
+    }
+ 
+    vector <tuple<int, int, int>> getSpaingTreeBoruvka() {
+        vector <tuple<int, int, int>> spaing_tree;
+        vector <tuple<int, int, int>> min_spaing_tree;
+        DSU dsu;
+        for (int i = 0; i < vertex_num; i++)
+            dsu.make_set(i + 1);
+        int vertexamount = vertex_num;
+        for (int i = 0; i < vertex_num; i++)
+            spaing_tree.push_back(make_tuple(0, 0, 0));
+ 
+        while (vertexamount > 1)
+        {
+            for (int i = 0; i < list_of_edges.size(); i++)
+            {
+                int from = dsu.find_set(get<0>(list_of_edges[i])), to = dsu.find_set(get<1>(list_of_edges[i]));
+                if (from == to)
+                    continue;
+                else
+                {
+                    if (get<2>(spaing_tree[from - 1]) == 0 || get<2>(spaing_tree[from - 1]) > get<2>(list_of_edges[i]))
+                        spaing_tree[from - 1] = list_of_edges[i];
+                    if (get<2>(spaing_tree[to - 1]) == 0 || get<2>(spaing_tree[to - 1]) > get<2>(list_of_edges[i]))
+                        spaing_tree[to - 1] = list_of_edges[i];
+                }
+            }
+ 
+            for (int i = 0; i < spaing_tree.size(); i++)
+            {
+                if (get<0>(spaing_tree[i]) == 0) continue;
+                if (dsu.find_set(get<0>(spaing_tree[i])) != dsu.find_set(get<1>(spaing_tree[i])))
+                {
+                    dsu.union_sets(get<0>(spaing_tree[i]), get<1>(spaing_tree[i]));
+                    min_spaing_tree.push_back(make_tuple(get<0>(spaing_tree[i]), get<1>(spaing_tree[i]), get<2>(spaing_tree[i])));
+                    vertexamount--;
+                }
+            }
+            for (int z = 0; z < spaing_tree.size(); z++)
+                spaing_tree[z] = make_tuple(0, 0, 0);
+        }
+        return min_spaing_tree;
+    }
 };
  
 class Graph {
@@ -699,6 +813,30 @@ public:
  
     void writeGraph(string fileName) {
         repres->writeGraph(fileName);
+    }
+ 
+    Graph getSpaingTreePrima() {
+        this->transformToAdjList();
+        vector<tuple<int, int, int>> minimalSpanningTree = reinterpret_cast<AdjListGraph*>(repres)->getSpaingTreePrima();
+        Graph* spanningTree = new Graph();
+        spanningTree->repres = new ListOfEdgesGraph(minimalSpanningTree, repres->GetInfo());
+        return *spanningTree;
+    }
+ 
+    Graph getSpaingTreeKruscal() {
+        this->transformToListOfEdges();
+        vector <tuple<int, int, int>> minimalSpanningTree = reinterpret_cast<ListOfEdgesGraph*>(repres)->getSpaingTreeKruscal();
+        Graph* spaing_tree = new Graph();
+        spaing_tree->repres = new ListOfEdgesGraph(minimalSpanningTree, repres->GetInfo());
+        return *spaing_tree;
+    }
+ 
+    Graph getSpaingTreeBoruvka() {
+        this->transformToListOfEdges();
+        vector <tuple<int, int, int>> minimalSpanningTree = reinterpret_cast<ListOfEdgesGraph*>(repres)->getSpaingTreeBoruvka();
+        Graph* spaing_tree = new Graph();
+        spaing_tree->repres = new ListOfEdgesGraph(minimalSpanningTree, repres->GetInfo());
+        return *spaing_tree;
     }
  
     bool checkEulerCircle() {
