@@ -429,13 +429,28 @@ public:
         for (int i = 0; i < vertex_num; ++i) {
             for (auto iter = adj_list[i].begin(); iter != adj_list[i].end(); iter++) {
                 if (dsu.find_set(i + 1) != dsu.find_set(iter->first))
+                {
                     dsu.union_sets(i + 1, iter->first);
+                }
             }
         }
-        int a = dsu.find_set(1);
-        for (int i = 1; i < vertex_num; ++i)
-            if (dsu.find_set(i + 1) != a)
-                return false;
+        int flag = 0;
+        int * check = new int[vertex_num];
+        for (int i = 0; i < vertex_num; ++i)
+        {
+            check[i] = 0;
+        }
+        for (int i = 0; i < vertex_num; ++i)
+        {
+            check[dsu.find_set(i + 1) - 1]++;
+        }
+        for (int i = 0; i < vertex_num; ++i)
+        {
+            if (check[i] > 1)
+                flag++;
+        }
+        if (flag > 1)
+            return false;
         return true;
     }
  
@@ -449,7 +464,7 @@ public:
  
     int checkEuler(bool circleExist) {
         int firstVertex = 1;
-        if (circleExist||checkConnectivity()) {
+        if (circleExist || checkConnectivity()) {
             int odd_vertexes_num = 0;
             for (int i = 0; i < vertex_num; i++) {
                 if ((adj_list[i].size() % 2) != 0) {
@@ -864,6 +879,6 @@ public:
  
 int main()
 {
-   
+ 
     return 0;
 }
